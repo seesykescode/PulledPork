@@ -1,6 +1,9 @@
 const express = require('express')
 app = express()
 port = 3000
+fs = require('fs')
+https = require('https')
+url = require('url')
 
 
 require('dotenv').config()
@@ -17,24 +20,32 @@ const traveler = new Traveler({
 
 app.get('/', (req, res) => {
     res.send("It's lit, baby. Helllllooooooo WORLD")
+    
 })
 
-app.get('/search/:platform/:memberID', (req, res) => {
-    platform = req.params.platform
-    playerName = req.params.memberID
-    playerObj =
-        traveler
-            .destiny2
-            .searchDestinyPlayer(platform, playerName)
-            .then(player => {
-                res.json(player)
-            })
-            .catch(err => res.send("yea it broke.", error))
+app.get('/auth', (req, res) => {
+   res.redirect(traveler.oauth.generateOAuthURL(process.env.D2_OAUTH_CLIENT))
+})
+
+app.get('/auth/callback', (req, res) => {
+    let code = req.query.code 
+    console.log(code)
+
+    traveler.oauth.getAccessToken(code).then(oauth => {
+        console.log(oauth)
+    }).catch(err=>{
+        console.log(err)
+    })
 })
 
 
 
 
 
-app.listen(port, () => console.log(`Express server is live and worldwide on port ${port}`))
-
+https.createServer({
+    key: fs.readFileSync('./key.pem'),
+    cert: fs.readFileSync('./cert.pem')
+}, app)
+    .listen(port, () => {
+        console.log(`Pulled Pork serving rezs on port ${port}`)
+    })
